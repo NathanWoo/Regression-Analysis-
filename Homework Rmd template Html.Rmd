@@ -1,0 +1,267 @@
+---
+title: "PSTAT 126 HW 2"
+author: "Nathan Wu, 6134910"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: 
+  pdf_document:
+    toc: yes
+---
+
+
+```{r setup, echo=FALSE}
+# set global chunk options: images will be 6x4 inches
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center', fig.width=6, fig.height=4)
+options(digits = 4)
+```
+\newpage
+
+```{r packages}
+ library(alr4)
+ library(faraway)
+```
+
+## 1. Using the dataset with sample of small mouth bass collected in West Bearskin Lake, Minnesota, in 1991 to predict *length* with *age*
+Import the data set _wblake_ in _alr4_ package 
+```{r}
+library(alr4)
+data('wblake')
+```
+
+__a) Do the regression of length on age, and report the estimates, their standard errors and the estimate of variance. Inteprete $\hat{\beta_0}$ and $\hat{\beta_1}$__
+```{r}
+x <- wblake$Age
+Y <- wblake$Length
+#fit <- lm(Y~x)
+##summary(lm(Y~x))
+n = length(x)
+xbar = mean(x)
+Ybar = mean(Y)
+Sxx = sum((x-xbar)^2)
+Syy = sum((Y-Ybar)^2)
+Sxy = sum((x-xbar)*(Y-Ybar))
+beta_1 = Sxy/Sxx
+beta_0 = Ybar - beta_1*xbar
+df = n-2
+Yhat = beta_0 + x*beta_1
+SSE = sum((Y-Yhat)^2)
+MSE = SSE/df
+SE_beta_1 = sqrt(MSE/Sxx)
+SE_beta_0 = sqrt(MSE*(1/n + (xbar^2)/Sxx ))
+beta_0
+beta_1
+SE_beta_0
+SE_beta_1
+MSE
+```
+From the data above we can obtain the following information:    
+$\hat{\beta_0}$ = `r beta_0` with Standard Error `r SE_beta_0`      
+$\hat{\beta_1}$ = `r beta_1` with Standard Error `r SE_beta_1`   
+The estimate of variance is $\hat{\sigma}$ = `r MSE`    
+
+Intepretation for $\hat{\beta_0}$:
+First, let's see the range of x in our data set.
+```{r}
+range(x)
+```
+When x = 0, the predicted reponse is 65.53, however, this is not meaningful, since 0 is out the range of x in our data set 
+
+
+Intepretation for $\hat{\beta_1}$:
+For one unit increase of x, the estimated change in Y will increase 30.324 units 
+
+
+
+__b) Obtain a 90% confidence interval of $/beta_1$ from the data. Interpret this interval.__ 
+```{r}
+CI = beta_1 + c(-1,1)*qt(1-0.1/2, df)*SE_beta_1
+CI
+```
+From the above the information, because the confidence interval does not incldue 0, we are 90% sure that $\beta_1$ is between 29.19 and 31.46, which means there is a positive lineat relationship between Age(x) and Length(Y)
+
+
+
+__c) Obtain a prediction and a 90% prediction interval for a small mouth bass at age 2. Interpret this interval.__ 
+```{r}
+x0 = 2
+Y0 = beta_0 + beta_1*x0
+SPE_Y0 = sqrt(MSE*(1 + 1/n + ((x0 - xbar)^2)/Sxx ))
+PI = Y0 + c(-1,1)*qt(1-0.1/2, df)*SPE_Y0
+Y0
+PI
+#new = data.frame(x = 2)
+#predict(lm(Y ~ x), new, interval = 'prediction', level = 0.9)
+
+```
+The predicted length of a small mouth bass is 126.2 at the age of 2 years. And we are 90% confident that the length of a small mouth bass at the age of 2 year is between 78.84 and 173.5
+
+
+
+
+## 2. Predicting dheight by mheight
+First, import the data set 
+```{r}
+data('Heights')
+```
+
+__a) Fit the regression of the resonse on the predictor. Draw a scatterplot of the data and add your fitted regression line.__ 
+```{r}
+x <- Heights$mheight
+Y <- Heights$dheight
+fit = lm(Y ~ x)
+plot(x, Y, xlab = 'mheight', ylab = 'dheight')
+abline(coef(fit), col=2)
+```
+
+
+__b) Report the estimates, their standard errors, the value of the coefficient of the determination, and the estimate of the variance. Interpret the coefficient of determination__ 
+```{r}
+summary(fit)
+```
+According the information shown in summary() result, we can conclude the following:  
+$\hat{\beta_0}$ = 29.917 with Standard Error 1.623  
+$\hat{\beta_1}$ = 0.542 with Standard Error 0.026  
+$\hat{\sigma^2}$ = `r 2.27^2`    
+$R^2$ = 0.241, so we say 24.1% of the variability in dheight is explained by the linear regression model with mheight. Also, as the value of the coefficient of determination is less than 0.7, we don't see a strong linear relationship between mheight and dheight  
+
+
+
+__c) Obtain a 90% confidence interval for $\beta_1$ from the data.__  
+```{r}
+confint(fit, level = 0.9)[2,]
+```
+From the result above, we are 90% confident that the value of $\beta_1$ lies between 0.4990 and 0.5845. Therefore, we think there is a linear relationship between mheight and dheight
+
+
+
+__d) Obtain a 99% confidence interval for daughters whose mother is 65 inches tall. Interpret this interval in the context of data.__  
+```{r}
+new = data.frame(x = 65)
+predict(fit, new, interval = 'confidence', level = 0.99)
+```
+From the result of analysis above, we are 99% confident that the average height of all the daughters whose mother is 65 inches tall is between 64.9 inches and 65.36 inches 
+
+
+__e) Obtain a predicted value and 95% prediction interval for a daughter whose mother is 60 inches tall.__
+```{r}
+new = data.frame(x = 60)
+predict(fit, new, interval = 'prediction', level = 0.95)
+```
+From the result of analysis above, we are 95% confident that the height of a the daughter whose mother is 60 inches tall is between  57.97 inches and 66.87 inches 
+
+__f) Compute the (Pearson) coefficient rxy, What does the value of rxy imply about the relationship between dheight and mheight.__ 
+```{r}
+xbar = mean(x)
+Ybar = mean(Y)
+Sxy = sum((x-xbar)*(Y-Ybar))
+Sxx = sum((x-xbar)^2)
+Syy = sum((Y-Ybar)^2)
+rxy = Sxy/sqrt(Sxx*Syy) 
+rxy
+```
+From the computed Pearson coefficient value we see above, we can say there is postive linear relationship between dheight and mgheight, but the linear relationship is not very strong 
+
+
+
+## 3. At FT. Collins, CO, does the average fall temperature predict the average winter temperature?
+
+First, let's import the data set ftcollinstemp
+```{r}
+data('ftcollinstemp')
+```
+
+__a) Fit the linear model. Draw a scatterplot of the data and add your fitted regression line?__
+```{r}
+x = ftcollinstemp$fall
+Y = ftcollinstemp$winter
+fit = lm(Y ~ x)
+plot(x, Y, xlab = 'Fall Temp', ylab = 'Winter Temp')
+abline(coef(fit), col = 2)
+```
+
+__b) Test the null hypothesis that the slope is 0 against a two-sided alternative at $\alpha$ = 0.01, and the interpret your findings__
+```{r}
+summary(fit)
+```
+Our interested $\alpha$ = 0.01, however, according to the summary table above, the P-value for slope is 0.043 which is greater than 0.01, thus it fails to reject the null hypothesis. Therefore, we are not confident that there is a linear relationship between average fall temperature and average winter temperature. 
+
+
+__c) What percetage of the variability in the average winter temperature is explained by the average fall temperature.__   
+Accdoing the $R^2$ from summary table, 3.71% of the variability in the average winter temperature is explained by the average fall temperature 
+
+
+
+## 4. Use the prostate data set from faraway package. Let the variable lpsa be the response and lcavol the predictor
+Fist, let's import the data set. 
+```{r}
+data('prostate')
+x = prostate$lcavol
+Y = prostate$lpsa
+```
+
+__a) Produce an ANOVA table for this regression fit. Test the null hypothesis that the slop is 0 against a two-sided alternative at the default $\alpha$, and interpret your findings.__ 
+```{r}
+fit = lm(Y ~ x)
+anova(fit)
+```
+According the above P-value of F-test, which is less than 2e-16, we are 95% sure confident that there is a linear relationship between lpsa(log of prostate specific antigen) and lcavol(log of cancer volume)
+
+__b) Using the ANOVA table from part (a), calculate the coefficient of determination. Interpret your finding.__   
+Accoding the formula of $R^2 = SSR/SSTO$, we can calculate $R^2$ as following:
+```{r}
+SSE = 58.9
+SSR = 69.0
+SSTO = SSE+SSR
+R2 = SSR/SSTO
+R2
+```
+Accoding to the result above,53.95% of the variability in lpsa(log of prostate specific antigen) is explained by the linear regression model with lcavol(log of cancer volume)
+
+
+## 5 Use the data set baeskel from the alr4 package. Fit the regression model with Tension as response and Sulfur predictor 
+First, let's get the data set 
+```{r}
+data('baeskel')
+x = baeskel$Sulfur
+Y = baeskel$Tension
+fit = lm(Y ~ x)
+```
+
+__a) Draw the diagnostic plots: Residuals vs Fitted, and a QQ-plot. Comment on any voilation of the standard linear model assumptions seen in these plots.__ 
+```{r}
+Yhat = fitted(fit)
+e = Y - Yhat
+plot(Yhat, e, xlab = "Fitted value", ylab = "Residual", main = "Residual vs Fitted")
+abline(h = 0, lty = 2)
+```
+From the Residual vs Fitted plot above, We don't see a linearity between Sulfur and Tension, neither do we see constant variance. 
+Now, let's draw a QQ-plot to see if the residual is normally distributted 
+```{r}
+qqnorm(e)
+qqline(e)
+```
+From the plot above we can see, it is a bit negative skewed   
+
+__b) Consider two alternative models given by the predictor transformations 1/Sulfur and log(Sulfur). With Sulfur on the horizontal axis and Tension on the vertival axix fit these two alternatives and plot the regrssion fits along with the fit from part (a)__
+```{r}
+negone_x = 1/x
+negone_fit = lm(Y ~ negone_x)
+log_x = log(x)
+log_fit = lm(Y ~ log_x)
+fitted_log = fitted(log_fit)
+fitted_negone = fitted(negone_fit)
+plot(x,Y)
+lines(x, Yhat, col = 2)
+lines(x, fitted_log, col = 3)
+lines(x, fitted_negone, col = 4)
+#invTranPlot(Y ~ x, lambda = c(-1,0,1), optimal = F)
+```
+
+__c) Replace Sulfur by its logarithm, and consider transforming the reponse Tension. To do this, find and report the optimal power transformation, $\hat\lambda_{ML}$ using the Box-Cox procedure discussed in class. Should you transform the variable? Explain. __  
+```{r}
+log_x = log(x)
+log_fit = lm(Y ~ log_x)
+bcTran <- boxCox(log_fit)
+lambda_opt <- bcTran$x[which.max(bcTran$y)]
+lambda_opt
+```
+According to the above graph, we don't need to transform the the variable, because 1 is within the confidence interval.

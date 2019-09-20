@@ -1,0 +1,142 @@
+---
+title: "PSTAT 126 HW 1"
+author: "Nathan Wu, 6134910"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: yes
+---
+
+```{r setup, echo=FALSE}
+# set global chunk options: images will be 6x4 inches
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center', fig.width=6, fig.height=4)
+options(digits = 4)
+```
+\newpage
+
+```{r packages}
+ library(alr4)
+ library(faraway)
+```
+
+# 1. Linear regression model of `ppgdp` on `fertility`.
+
+Import the data set *UN11* in *alr4* package, extract the data *ppgdp* and *fertility*
+```{r}
+data('UN11')
+x = UN11$fertility
+y = UN11$ppgdp
+```
+
+## (a) Scatterplot of `ppgdp` on `fertility`
+Below is the scatterplot of *ppgdp* against *fertility*
+```{r}
+plot(x, y, xlab = "Fertility (Children/Women)", ylab = "Per Capita GDP ($)")
+```
+From the above graph, we can't see a very clear linear relationship between these two data
+Now, calculate the natural logrithms of both variables 
+```{r}
+logx = log(x)
+logy = log(y)
+```
+
+Replacing both variables by their natural logrithms, and draw another scatterplot
+
+## (b) Scatterplot of log(`ppgdp`) against log(`fertility`)
+```{r}
+plot(logx, logy, xlab = "log Fertility", ylab = "log Per Capita GDP")
+```
+
+Now we can see a plausible linear trend that we use for summary. 
+
+## (c) compute lse for slope and intercept 
+Now we want to find the LSE
+```{r}
+xbar = mean(logx)
+ybar = mean(logy)
+Sxx = sum((logx-xbar)^2)
+Syy = sum((logy-ybar)^2)
+Sxy = sum((logx-xbar)*(logy-ybar))
+b1 = Sxy/Sxx
+b0 = ybar - b1*xbar
+plot(logx, logy, xlab = "log Fertility", ylab = "log Per Capita GDP")
+abline(b0,b1)
+b1
+b0
+```
+
+# 2. Predict `lpsa` with `lcavol`
+First, import the data set *prostate*
+```{r}
+data('prostate')
+y = prostate$lpsa
+x = prostate$lcavol
+```
+After extracting the data from the data set, we want to draw a scatter plot to discover the relationship between these two data
+## (a)
+```{r}
+plot(x , y, xlab = "log cancer volume", ylab = "log prostate specific antigen") 
+```
+We can see there is a quite clear postive linear relationship between these two data
+
+## (b)
+```{r}
+xbar = mean(x)
+ybar = mean(y)
+Sxx = sum((x-xbar)^2)
+Syy = sum((y-ybar)^2)
+Sxy = sum((x-xbar)*(y-ybar))
+b1 = Sxy/Sxx
+b0 = ybar - b1*xbar
+plot(x , y, xlab = "log cancer volume", ylab = "log prostate specific antigen") 
+abline(b0,b1)
+xbar
+ybar
+Sxx
+Sxy
+Syy
+```
+
+## (c) Obtain the estimate of σ2 and find the estimated standard errors of β􏰀0 and β􏰀1
+```{r}
+yhat = b0 + b1*x
+e = y - yhat
+n = length(x)
+sse = sum((y-yhat)^2)
+mse = sse/(n-2)
+se_b1 = sqrt(mse/Sxx)
+se_b0 = sqrt(mse* ((1/n) + ((xbar^2)/Sxx) ) )
+
+mse
+se_b0
+se_b1
+```
+
+## (d) Find the estimated covariance between β0 and β1.
+```{r}
+-mse*xbar/Sxx
+```
+
+## (e) Carry out t-tests for the two null hypotheses β0 = 0 and β1 = 0, reporting the value of the test statistic and a p-value in each case.
+```{r}
+test_b0 = b0/se_b0
+test_b1 = b1/se_b1
+
+
+p_b0 = 2*pt(q = test_b0, df = n-2, lower.tail = F)
+p_b1 = 2*pt(q = test_b1, df = n-2, lower.tail = F)
+
+test_b0
+test_b1
+p_b0
+p_b1
+```
+According to the result of p-value of $\beta_1$, we are 95% sure that there is a positive linear relationship between x and Y. 
+
+
+## (f) Use the R function lm() to fit the regressions of lpsa on lcavol.
+```{r}
+fit = lm(y~x)
+summary(fit)
+```
+

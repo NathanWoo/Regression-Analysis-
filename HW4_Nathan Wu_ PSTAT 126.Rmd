@@ -1,0 +1,218 @@
+---
+title: "PSTAT 126 HW 4"
+author: "Nathan Wu, 6134910"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: 
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, echo=FALSE}
+# set global chunk options: images will be 6x4 inches
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center', fig.width=6, fig.height=4)
+options(digits = 4)
+```
+\newpage
+
+```{r packages}
+# library(alr4)
+# library(faraway)
+```
+### 1. Use salary data in alr4 packagem. One fitted mean function is E(Salary|sex) = 24697 - 3340sex, where sex equals 1 if the faculty memebr was female and 0 if male. The response salary is measured in dollars. 
+
+__(a) Give a setence that describes the meaning of the two estimated coefficients__   
+This means that females have average salary 3340 less than the average salary of male which is 24697.
+
+__(b) An alternative mean function fit to these data with an additional term, year, the number of years employed at this college, gives the estimated mean function E(salary | sex, year) = 18065 + 201sex + 759year. The important difference between these two mean functions is that the coefficient for sex has changed signs. Provide an explanation as to how this could happen.__   
+For females, the expected average salary is 201 more than males for every value of year. The reason that there is difference between two mean functions is because the fist model, only consists of one signle predictor-sex, however, based on the second mean function, we can tell that year is a very important predictor to this model, which has a very strong effect to the predicted average value, thus year should also be included in the model.  
+
+
+
+### 2. The data BGSall in the alr4 package contains information on n = 136 children in the Berkeley Guidance study, including heights at ages 2 and 18 (HT2 and HT18), and gender (Sex =0 for male, 1 for female). Consider the regression of HT18 and HT2 and the grouping factors Sex.  
+
+Fist, let's get the data
+```{r}
+library(alr4)
+library(ggplot2)
+attach(BGSall)
+data('BGSall')
+```
+
+
+__(a) Draw the scatterplot of HT18 versus HT2, using a different color for males and females. Add the two parallel estimated regression lines to the scatterplot. Comment on the information in the graph about an appropriate mean function for these data__   
+```{r}
+HT18 <-BGSall$HT18
+HT2 <- BGSall$HT2
+BGSall$Sex <- as.factor(BGSall$Sex)
+Sex <- BGSall$Sex
+HT.lm <- lm(HT18 ~ HT2 + Sex)
+HT.summary <- summary(HT.lm)
+HT.summary 
+plot(HT18~HT2, 
+     pch = 16, col = yarrr::transparent(c("blue", "red"), .7)[Sex])
+legend("bottomright",
+       legend = c("Males", "Females"),
+       col = yarrr::transparent(c('blue', 'red'), .5),
+       pch = c(16, 16),
+       bg = "white")
+intercepts <- c(coef(HT.lm)["(Intercept)"],
+                coef(HT.lm)["(Intercept)"] + coef(HT.lm)["Sex1"])
+slope = coef(HT.lm)["HT2"]
+abline(a = intercepts[1],b=slope, col = yarrr::transparent("blue", .5))
+abline(a = intercepts[2],b=slope, col = yarrr::transparent("red", .5))
+
+```
+From the graph above we can see a very clear linearity between HT2 and HT18, also by looking at the fitted line and the scatter plot whose points are marked with different colors based on the gender category, we can see that out model predict the mean of each gender pretty well.
+
+__(b) Obtain the appropriate test for a parallel regression model.__ 
+```{r}
+anova(HT.lm)
+```
+Since both of the P-value are small, we fail to reject both null hythesis of those parameters are eqaul to 0. Thus, we should keey both predictors. The test result shows that there is significant linear relationship between HT2 and HT18 for both gender. Also there is a significace difference in the means of HT18 between female and male for any value of HT2
+
+__(c) Assuming the parallel regression model is adequate, estimate a 95% confidence interval for the mean difference between males and females. For the parallel regression mode, this is the different in the intercepts of the two groups.__ 
+```{r}
+confint(HT.lm, "Sex1", level = 0.95)
+detach(BGSall)
+```
+From the above result, we can say that we are 95% that the mean HT18 of female is between 9.418 to 12.84 less than males for all HT2 value 
+
+
+### 3. The data set matel in the alr4 package has a response Y and three predictors $x_1,x_2 and x_3$  
+Fist, initialized the packages, the data, and train the model. 
+```{r}
+library(alr4)
+data('mantel')
+X1 <- mantel$X1
+X2 <- mantel$X2
+X3 <- mantel$X3
+Y <- mantel$Y
+mantel.0 <- lm(Y ~ 1, data = mantel)
+mantel.full <- lm(Y ~ X1 +X2+X3 , data = mantel)
+```
+
+__(a)Apply the foward selection and backward elimination algorithms, using the AIC as the criteria function. Report your findings__ 
+```{r}
+step(mantel.0, scope = list(lower = mantel.0, upper = mantel.full), direction = "forward")
+```
+From the above forward selection result, we can see that model stops adding predictors after adding x3. Thus we choose the model with $x_3$ as a signle predictor to be our model based on the forward selection method. 
+
+
+```{r}
+step(mantel.full, scope = list(lower = mantel.0, upper = mantel.full), direction = "backward")
+```
+As the result of backward elemination method stops reducing after reducing x3, we choose the model with x1 and x2 as predicots. 
+
+__(b) Use regsubsets() function in R to determine the best model. Which appear to be the important predictors? What's the final model? Explain your resoning__    
+```{r}
+library(leaps)
+a <- regsubsets(cbind(X1, X2, X3), Y, data = mantel)
+summary.reg <- summary(a)
+summary.reg$which 
+summary.reg$rsq
+summary.reg$adjr2
+summary.reg$cp
+summary.reg$bic
+```
+Baesd on the result above, since for the model with two predictors and three predictors, they both have $R^2$ value of 1, therefore, we can narrow our final model down to between these two. Then we look at other criterias, we see that the model with 3 predictors has a lower bic score, therefore we choose the model with three predictors to be our final model. 
+
+### 4. Use the divusa data set from the alr4 package with divorse as the response and the other variables as predictors, implement the following variable section methods to determine the "best" model:  
+First, let's import the dataset and train the model. 
+```{r}
+library(faraway)
+data('divusa')
+attach(divusa)
+summary(divusa)
+divusa.subset <- regsubsets(divorce ~ . , data = divusa)
+divusa.summary <- summary(divusa.subset)
+```
+
+__(a) Best subsets regression with adjusted $R^2$__
+```{r}
+divusa.summary$which
+divusa.summary$adjr2
+```
+From the result above, based on the adjused $R^2$ we can conclude that the best subset regression is the model with 5 predictors, which include year, femlab, marriage, birth, military.  
+
+__(b) Best subset regression with adjested Mallow's $C_p$__
+```{r}
+divusa.summary$which
+divusa.summary$cp
+```
+From the result above, based on the adjusted $C_p$ we can conclude that the best subset regression is the model with 5 predictors, which include year, femlab, marriage, birth, military. 
+
+
+__(c) Best subsets regression regression with adjusted BIC.__
+```{r}
+divusa.summary$which
+divusa.summary$bic
+detach(divusa)
+```
+From the result above, based on the adjusted BIC value, we can conclude that the best subset regression is the model with 5 predicots, which include year, femlab, marriage, birth, military. 
+
+
+
+### 5. The lathe1 data set frim the alr4 package contains the results of an experiment on characterizing the life of a drill bit in the cutting steel on a lathe. Two factors were varied in the experiment, Speed and Feed rate. The response in Life, the total time until the drill bits fails, in minuts. The value of Speed and Feed in the data have been coded by computing. 
+
+First, let's import the dataset and train the model. 
+```{r}
+data('lathe1')
+attach(lathe1)
+life.reg <- lm(Life ~ Speed + Feed + I(Speed^2) + I(Feed^2) + Speed*Feed)
+summary(life.reg)
+```
+
+__(a) Use Box-Cox medthod to show that an appropriate scale for the response is the logarithmic scale.__   
+```{r}
+boxCox(life.reg)
+```
+From the above Box-Cox tranformation graph above we can see that 0 is within the 95% condifence interval range, therefore log(Y) is a appropriate transformation on Y
+
+
+__(b) State the null and alternative hypotheses for the global(overall) F-test for this model using log(Life) as the response. Perform the test and summarize result__   
+Null hypotheses would be all the prediction parameters are equal to 0, alernative hypotheese would be at least one of them is not equal to 0. 
+```{r}
+loglife.red <- lm (log(Life) ~ 1)
+loglife.reg <- lm(log(Life) ~ Speed + Feed + I(Speed^2) + I(Feed^2) + Speed*Feed)
+anova(loglife.red, loglife.reg)
+```
+From the above result of F-test, we reject the null hypothesis that all parameter are equal to zero, and we can conclude that there is at least one useful redictor. 
+
+__(c) Explain the practical meaning of the hypothesis $H_0:\beta_1 = \beta_{11} = \beta_{12} = 0$  in the context of the above model.__    
+Since the null hypothesis is setting all the parameter infront of predictors that involves the effect of speed, therefore we say that the null hypothesis is saying that speed is not useful predictor to the model that has log(Life) as the response. 
+
+__(d) Perform a test for the hypothesis in the part (c) and summarize your results.__  
+```{r}
+loglife.reg <- lm(log(Life) ~ Speed + Feed + I(Speed^2) + I(Feed^2) + Speed*Feed)
+loglifewospeed.lm <- lm(log(Life) ~ Feed + I(Feed^2))
+anova(loglifewospeed.lm, loglife.reg)
+```
+From the F-test result above, considering the P-value is less than all the signicance number, we reject the null the hypothesis, we have the conclusion that Speed is an useful predictor to the model with log(Life) as the response after controlling the effect of all other predictors. 
+
+
+__(e) Find the two cases that are most influential in the fit of the quadratic mean function for log(Life), and epxlain why they are influential. Delete the points from the data, refit the quadratic mean function, and compare with the fit with all the data.__
+```{r}
+#plot(loglife.reg)
+influenceIndexPlot(loglife.reg, vars = c('hat', 'Cook'), id=TRUE)
+reuced_point <- lathe1[ -c(9,10), ]
+```
+From the above Disagnostic Plots, based on the Cook's distance, we can see that the 9th and 10th data points are the two influential point. 
+
+```{r}
+newLife <- reuced_point$Life
+newSpeed <- reuced_point$Speed
+newFeed <- reuced_point$Feed
+adjusted.loglife.reg <- lm(log(newLife) ~ newSpeed + newFeed + 
+                             I(newSpeed^2) + I(newFeed^2) + 
+                             newSpeed*newFeed)
+summary(loglife.reg)
+
+summary(adjusted.loglife.reg)
+
+```
+From the two summary table above, we can see after remove the two influential point we have a smaller Residual Standard Error and a higher Adjusted $R^2$, thus we would prefer the fit without the two influential point
+
+
+
+
+

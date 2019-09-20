@@ -1,0 +1,224 @@
+---
+title: "PSTAT 126 HW 3"
+author: "Nathan Wu, 6134910"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: 
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, echo=FALSE}
+# set global chunk options: images will be 6x4 inches
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center', fig.width=6, fig.height=4)
+options(digits = 4)
+```
+\newpage
+
+
+## 1. 
+__d) Stimulate a data set with n = 100 observation units such that $Y_i = 1 +2x_i + \epsilon_i$, $i = 1,...,n$. $\epsilon_i$ follows the standard normal distributionm i.e., a normal distribution with zero mean and unit variance. Use the result in (c) to compute $\hat{\beta_0}$ and $\hat{\beta_1}$. Show that they are the same as the estimates by lm().__
+```{r}
+n <- 100
+x <- seq(0,1,length = n)
+epsilon <- rnorm(100)
+epsmat <- matrix(c(epsilon), nrow = n, ncol = 1)
+one <- seq(1, 1 ,length = n)
+xmat <- matrix(c(one,x), nrow = n, ncol = 2)
+xmatTrans <- t(xmat)
+Y <- 1+ 2*x + epsilon
+Ymat <- matrix(c(Y), nrow = n, ncol = 1)
+XXTinver <- solve(xmatTrans%*%xmat)
+XTY <- xmatTrans%*%Ymat
+betamat <- XXTinver%*%XTY
+# xbar <- mean(x)
+# Ybar <- mean(Y)
+# Sxx <- sum((x-xbar)^2)
+# Syy <- sum((Y-Ybar)^2)
+# Sxy <- sum((x-xbar)*(Y-Ybar))
+# beta_1_hat <- Sxy/Sxx
+# beta_0_hat <- Ybar - beta_1_hat*xbar
+# beta_0_hat
+# beta_1_hat
+betamat
+summary(lm(Y~x))
+```
+
+
+## 3. Use the dataset ftcollinstemp in the alr4 package, Answer the question: Does the average fall temperature predict the average winter temperature 
+
+First, impor the package 
+```{r packages}
+library(alr4)
+```
+
+__a) Use the lm function in R to fit the regresiion of the response on the predictor. Draw a scatterplot of the data and add your fitted regression line__
+```{r}
+data('ftcollinstemp')
+x <- ftcollinstemp$fall
+Y <- ftcollinstemp$winter
+fit <- lm(Y ~ x)
+plot(x, Y, xlab = "Mean Fall Temp", ylab = "Mean Winter Temp")
+abline(coef(fit), col = 2)
+```
+
+
+__b) Test the null hypothesis that the slope is 0 against a two-sided alternative at $\alpha$ = 0.01, and interpret your findings__
+```{r}
+summary(fit)
+```
+Accoding the information above in the summary, we can see that the P-value of t-test result is 0.043, which is greater than the cirtical value we are interested in. Thus we fail to reject the null hypothesis of $\beta_1$ = 0. So we say, we don't have enough evidence to prove that there is linear relationship between the mean temperature in the fall and the winter mean temperature. 
+
+__c) What percentage of variablity in the average winter temperature is explained by the average fall temperature?__   
+From the summary table above, since we are looking at a simple linear regression model, just the $R^2$ value would be sufficient to interpret the variablity explained by the model. So we have, 3.71% of the variability in Average Winter Temperature is explained by the linear regression model with Average Fall Temperature.
+
+## 4. The problem uses the teengamb data set in the faraway package. Fit a model with gamble as the response and the other variables as predictors.   
+
+First, let's see up the data set and library. Also, fit the model. 
+```{r}
+library(faraway)
+data('teengamb')
+teengamb.lm <- lm(gamble ~ ., data = teengamb)
+```
+
+
+__a) Predict the amount that women with average (given the data) status, income, and verbal score would gamble along with appropriate 95% confidence interval for the mean amount__ 
+```{r}
+statusBar <- mean(teengamb$status)
+incomeBar <- mean(teengamb$income)
+verbalBar <- mean(teengamb$verbal)
+WomenMean <- data.frame(sex = 1,status = statusBar, income = incomeBar,verbal = verbalBar )
+predict(teengamb.lm, WomenMean, interval = "confidence", level = 0.95)
+```
+
+
+__(b) Repeat the prediction for women with maximal values (for this data) of status, income and verbal score. Which confidence interval is wider and why is the result expected__
+```{r}
+statusMax <- max(teengamb$status)
+incomeMax <- max(teengamb$income)
+verbalMax <- max(teengamb$verbal)
+WomenMax <- data.frame(sex = 1, status = statusMax, income = incomeMax, verbal = verbalMax)
+predict(teengamb.lm, WomenMax, interval = "confidence", levels = 0.95)
+```
+
+The confidence interval with maximal values has wider range of confidence interval. This because the max value is more far away from the mean value.
+
+
+
+## 5. Use the water data set in the alr4 package. For this problem, consider the regression problem with response BSAAM, and three predictors as regression given by OPBPC, OPRC, and OPSLAKE
+
+First, let's import the dataset
+```{r}
+library(alr4)
+data('water')
+attach(water)
+```
+
+__a)Examine the scatterplots for all variable, and comment on the marginal relationships. __
+```{r}
+pairs(~ BSAAM + OPBPC + OPRC + OPSLAKE)
+```
+  
+From the scatterplots above, we can observe a very clear marginal linear relationship for each variable against BSAAM. We can see a quit clear linear relationship between each two individual variables as well. 
+
+
+__b) Fit three simple regressions for BSAAM ~ OPBPC, BSAAM ~ OPRC and BSAAM ~ OPSLAKE and verify that the slope coefficients are significantly different from 0 at any conventional level of significance.__
+```{r}
+summary(lm(BSAAM ~ OPBPC))
+summary(lm(BSAAM ~ OPRC))
+summary(lm(BSAAM ~ OPSLAKE))
+```
+From the summary table above, we can see that for each simple linear regression model, the P-value for each t-test on $\beta_1$ are less than the smallest significant value 0.01.  Thus we can verify that the slope coefficients are signigicantly different from 0 at any conventional level of significance. 
+
+
+__c) Obtian the added-variable plots for the model. Report your findings__
+```{r}
+BSAAM.lm <- lm(BSAAM ~ OPBPC + OPRC + OPSLAKE)
+avPlots(BSAAM.lm, id=FALSE)
+```
+
+From the graphs above, we find OPBPC doesn't seem to have a strong linear relationship with BSAAM after controlling the effects of all ohter variables. However, both OPRC and OPSLAKE appear to have a clear postive linear relationship with BSAAM after having other variables being controlled 
+
+__d) Get the regression summary for the regression of BSAAM on these three regressors. Include OPBPC, OPRC and OPSLAKE sequentially. Explain the value on the "Pr(>|t|)" column of your output, with given $\alpha$ = 0.5__
+```{r}
+summary(BSAAM.lm)
+```
+
+From the summary table above, at the "Pr(>|t|)" column, given $\alpha$ = 0.5, we fail to reject the null hypothesis of assuming that the parameter($\beta_1$) before OPBPC is equal to 0, thus we don't have enough confidence to show that there is linear relationship between OPBPC and BSAAM after controlling the effects of all other predictors. But, for the parameters before OPRC and OPSLAKE ($\beta_2$ and $\beta_3$), looking at the P-values for each t-test, we can reject the null pypothesis, which means we are 95% confident that there is a linear relationship between BSAAM and OPRC after other the effects of the other variables being controlled, we are also 95% confident that there is a linear relationship between BSAAM and OPSLAKE after the effects of other variables being controlled. 
+
+__e) Conduct an F-test of whether or not $\beta_1$ = 0 given $\alpha$ = .05. State the alternative hypothesis, decision rule, and conclusion.__   
+The null hypothesis $H_0$ would be $\beta_1 = 0$ alternative pyhothesis $H_1$ would be $\beta_1 \neq 0$
+```{r}
+BSAAMRed <- lm(BSAAM ~ OPRC + OPSLAKE)
+anova(BSAAMRed, BSAAM.lm)
+```  
+From the above ANOVA table, according to the P-value, we fail to reject the null hypothesis, therefore, we say OPBPC is not a useful predictor to the regression model after controlling the effects other variables
+
+__f) Can you use the table in (d) to conduct the F-test in (e)? Why or why not?__  
+Yes, you can, because you're conduction a partial F-test on a signle variable, therefore the P-value is the same as the T-test results, and the F-value would be the square of t-value. 
+
+
+__g) Conduct and F-test on whether or not $\beta_1 = \beta_3 = 0$ given $\alpha = 0.05$. State the alternative hypothesis, decision rule, and conclusion.__  
+The null hypothesis $H_0$ would be $\beta_1 = \beta_3 = 0$ alternative pyhothesis $H_1$ would be $\beta_1 \ne 0$ or $\beta_3 \ne 0$
+
+```{r}
+Red.lm <- BSAAMRed <- lm(BSAAM ~ OPRC)
+anova(Red.lm, BSAAM.lm)
+```
+From the ANOVA table above, according to the P-value, we reject the null hypothesis, which means we are 95% confident that there is at least one predictor among OPBPC and OPSLAKE is useful to the regression model after controlling the effects of other variables. 
+
+__h) Use R to produce an ANOVA table for this regression fit. What is SSR(OPSLAKE|OPBPC, OPRC)? What is SSE(OPBPC,OPRC)?__
+```{r}
+anova(BSAAM.lm)
+```
+
+From the above sequential ANOVA table, we can tell that SSR(OPSLAKE|OPBPC, OPRC) = 6.42e+08. And we can get the SSE(OPBPC,OPRC) by having SSTO - SSR(OPBPC,OPRC) = SSE + SSR(OPSLAKE|OPBPC, OPRC), which is:  3.331e+09
+```{r}
+an_result <- anova(BSAAM.lm)
+SS <- an_result$`Sum Sq`
+sum(SS[3:4])
+```
+
+
+## 6. Use the dataset UBSprices from the alr4 package. Fit a model with bigmac2009 as the response and bread2009, rice2009 as predictors. Perform residual diagnotics on this model to answer the following questions.   
+
+Fisrt, let's impor the dataset 
+```{r}
+library(alr4)
+data('UBSprices')
+attach(UBSprices)
+UBS.lm <- lm(bigmac2009 ~ bread2009 + rice2009)
+```
+
+
+__a) Which plot do you want to draw to check the Linearity assumption? And report your findings(s).__ 
+I want to use both resisual vs fitted value plot and scatter plot to check the linearity assumption 
+```{r}
+Yhat <- fitted(UBS.lm)
+e <- bigmac2009 - Yhat
+plot(UBS.lm, which = 1)
+avPlots(UBS.lm, labels = FALSE)
+```
+From the Residual vs Fitted plot above, we don't observe a pattern in the graph, thus we say, there is a linear relationship between reponse and all the predictors. Also, from the Av-plots we have the same conclusion. 
+
+
+__b) Which plot do want to draw to check the Equal Variance (or Constant Variance) assumption? And report your finding(s)__   
+To check the Equal Variance propterty, we need to draw the Residual vs Fitted plot as below. 
+```{r}
+plot(Yhat, e, xlab = "Fitted value", ylab = "Residual", main = "Residual vs Fitted")
+```
+From the graph above, we don't observe a constant bound, thus we have the conclusion that, the equal variance property is not valid. 
+
+
+__c) Which plot do you want to draw to check the Normality assumption? And report your finding(s).__   
+To check the Normality assumption, we need to draw the Normal Q-Q plot, like below. 
+```{r}
+qqnorm(e)
+qqline(e)
+```
+From the Q-Q plot above, it is obvious that the graph is heavily tailed Therefore, the normality property is also invalid.
+
+__d) Use the R function shapiro.test() to test if the residuals of the linear fit is normally distributed. State the p-value of this test and your conclusion given $\alpha = 0.05$. Does the result support your conclusion in part (c)?__
+```{r}
+shapiro.test(e)
+```
+Since the nul hypothesis for Shapiro-Wilk test is that the residual is normally distributed.Thus, since the P-value is less than 0.05, we reject the null hypothesis of being normally distributed, so we are 95% confident that the residual is not normally distributed 
